@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Design System Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11px;
+      background: #ffffff;
+      color: #000000;
+      overflow: hidden;
+    }
+    html, body { height: 100%; width: 100%; }
+    
+    /* Custom Dropdown Styles */
+    .custom-dropdown {
+      position: relative;
+      width: 100%;
+    }
+    
+    .dropdown-trigger {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 10px;
+      background: white;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .dropdown-trigger:hover {
+      border-color: #18a0fb;
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      margin-top: 4px;
+      display: none;
+    }
+    
+    .dropdown-menu.open {
+      display: block;
+    }
+    
+    .dropdown-option {
+      padding: 8px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+    }
+    
+    .dropdown-option:hover {
+      background: #f5f5f5;
+    }
+    
+    .color-preview {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+    
+    .style-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    
+    .style-name {
+      font-weight: 500;
+      color: #000;
+    }
+    
+    .style-meta {
+      font-size: 9px;
+      color: #999;
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    
+    .modal-overlay.open {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #000;
+    }
+    
+    .modal-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-bottom: 16px;
+    }
+    
+    .modal-input:focus {
+      outline: none;
+      border-color: #18a0fb;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    
+    .modal-button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .modal-button-primary {
+      background: #7c3aed;
+      color: white;
+    }
+    
+    .modal-button-primary:hover {
+      background: #6d28d9;
+    }
+    
+    .modal-button-secondary {
+      background: #e5e5e5;
+      color: #000;
+    }
+    
+    .modal-button-secondary:hover {
+      background: #d4d4d4;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Loading...</div>
+  
+  <!-- Modal for creating new style -->
+  <div id="create-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title">Create New Style</div>
+      <input type="text" id="style-name-input" class="modal-input" placeholder="Enter style name...">
+      <div class="modal-buttons">
+        <button id="modal-cancel" class="modal-button modal-button-secondary">Cancel</button>
+        <button id="modal-create" class="modal-button modal-button-primary">Create</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    console.log('=== UI Script Loaded ===');
+    
+    // State
+    let elements = [];
+    let totalNodes = 0;
+    let filter = 'all';
+    let isAnalyzing = false;
+    let statusMessage = '';
+    let availableStyles = [];
+    let currentElementForCreate = null;
+    
+    // Message handler
+    window.onmessage = (event) => {
+      console.log('Message received:', event.data);
+      const msg = event.data.pluginMessage;
+      
+      if (msg.type === 'analysis-result') {
+        elements = msg.elements;
+        totalNodes = msg.totalNodes;
+        availableStyles = msg.availableStyles || [];
+        isAnalyzing = false;
+        if (msg.elements.length === 0) {
+          statusMessage = '✓ All elements are connected to styles!';
+        } else {
+          statusMessage = `Found ${msg.elements.length} unconnected element(s)`;
+        }
+        render();
+      } else if (msg.type === 'connection-success') {
+        statusMessage = '✓ Element connected successfully';
+        render();
+      } else if (msg.type === 'style-created') {
+        statusMessage = `✓ Style "${msg.styleName}" created successfully`;
+        render();
+      } else if (msg.type === 'error') {
+        statusMessage = `⚠ Error: ${msg.message}`;
+        isAnalyzing = false;
+        render();
+      } else if (msg.type === 'no-selection') {
+        statusMessage = '⚠ Please select a frame or element to analyze';
+        isAnalyzing = false;
+        render();
+      }
+    };
+    
+    // Send message
+    function sendMessage(msg) {
+      console.log('Sending message:', msg);
+      window.parent.postMessage({ pluginMessage: msg }, '*');
+    }
+    
+    // Handlers
+    function handleAnalyze() {
+      console.log('Analyze clicked');
+      isAnalyzing = true;
+      statusMessage = 'Analyzing selection...';
+      render();
+      sendMessage({ type: 'analyze' });
+    }
+    
+    function handleConnect(element, styleId) {
+      console.log('Connect clicked:', element.id, styleId);
+      sendMessage({
+        type: 'connect-element',
+        nodeId: element.id,
+        styleId: styleId,
+        elementType: element.type,
+        paintIndex: element.paintIndex
+      });
+    }
+    
+    function handleCreateStyle(element) {
+      console.log('Create style clicked:', element.id);
+      
+      // Store element for later
+      currentElementForCreate = element;
+      
+      // Set default name
+      let defaultName = element.name;
+      if (element.type === 'fill') {
+        defaultName = `Color/${element.name}`;
+      } else if (element.type === 'stroke') {
+        defaultName = `Stroke/${element.name}`;
+      } else if (element.type === 'typography') {
+        defaultName = `Text/${element.name}`;
+      }
+      
+      // Open modal
+      const modal = document.getElementById('create-modal');
+      const input = document.getElementById('style-name-input');
+      if (modal && input) {
+        input.value = defaultName;
+        modal.classList.add('open');
+        setTimeout(() => input.focus(), 100);
+      }
+    }
+    
+    function confirmCreateStyle() {
+      const input = document.getElementById('style-name-input');
+      const styleName = input ? input.value.trim() : '';
+      
+      if (styleName && currentElementForCreate) {
+        sendMessage({
+          type: 'create-style',
+          nodeId: currentElementForCreate.id,
+          elementType: currentElementForCreate.type,
+          styleName: styleName,
+          paintIndex: currentElementForCreate.paintIndex
+        });
+      }
+      
+      closeCreateModal();
+    }
+    
+    function closeCreateModal() {
+      const modal = document.getElementById('create-modal');
+      if (modal) {
+        modal.classList.remove('open');
+      }
+      currentElementForCreate = null;
+    }
+    
+    function setFilterType(newFilter) {
+      filter = newFilter;
+      render();
+    }
+    
+    function toggleDropdown(idx) {
+      const menu = document.getElementById(`dropdown-menu-${idx}`);
+      if (menu) {
+        const isOpen = menu.classList.contains('open');
+        // Close all dropdowns first
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+        // Toggle this one
+        if (!isOpen) {
+          menu.classList.add('open');
+        }
+      }
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.custom-dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
+      }
+    });
+    
+    // Format helpers
+    function formatColor(color) {
+      return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`;
+    }
+    
+    function formatTypography(typo) {
+      const lineHeight = typeof typo.lineHeight === 'number' 
+        ? `${typo.lineHeight}px` 
+        : `${typo.lineHeight.value}${typo.lineHeight.unit === 'PERCENT' ? '%' : ''}`;
+      return `${typo.fontFamily} ${typo.fontSize}px / ${lineHeight}`;
+    }
+    
+    // Render
+    function render() {
+      console.log('Rendering, elements:', elements.length);
+      
+      const app = document.getElementById('app');
+      if (!app) {
+        console.error('App container not found!');
+        return;
+      }
+      
+      const filteredElements = elements.filter((el) => {
+        if (filter === 'all') return true;
+        if (filter === 'color') return el.type === 'fill' || el.type === 'stroke';
+        if (filter === 'typography') return el.type === 'typography';
+        return true;
+      });
+      
+      app.innerHTML = `
+        <div style="display: flex; flex-direction: column; height: 100vh; background: #ffffff;">
+          <!-- Header -->
+          <div style="padding: 16px; border-bottom: 1px solid #e5e5e5; background: #f0f0f0;">
+            <h1 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #000000;">Design System Checker</h1>
+            <button 
+              id="analyze-btn"
+              style="width: 100%; padding: 8px 16px; background: ${isAnalyzing ? '#b3b3b3' : '#18a0fb'}; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: ${isAnalyzing ? 'not-allowed' : 'pointer'};"
+              ${isAnalyzing ? 'disabled' : ''}
+            >
+              ${isAnalyzing ? 'Analyzing...' : 'Analyze Selection'}
+            </button>
+          </div>
+          
+          <!-- Filters -->
+          ${elements.length > 0 ? `
+            <div style="display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #f5f5f5;">
+              <button id="filter-all" style="padding: 6px 12px; background: ${filter === 'all' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'all' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'all' ? 'white' : '#000'}; font-weight: ${filter === 'all' ? '500' : '400'};">
+                All (${elements.length})
+              </button>
+              <button id="filter-color" style="padding: 6px 12px; background: ${filter === 'color' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'color' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'color' ? 'white' : '#000'}; font-weight: ${filter === 'color' ? '500' : '400'};">
+                Colors (${elements.filter(e => e.type === 'fill' || e.type === 'stroke').length})
+              </button>
+              <button id="filter-typography" style="padding: 6px 12px; background: ${filter === 'typography' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'typography' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'typography' ? 'white' : '#000'}; font-weight: ${filter === 'typography' ? '500' : '400'};">
+                Typography (${elements.filter(e => e.type === 'typography').length})
+              </button>
+            </div>
+          ` : ''}
+          
+          <!-- Content -->
+          <div style="flex: 1; overflow-y: auto; background: #ffffff;">
+            ${filteredElements.length > 0 ? renderTable(filteredElements) : renderEmpty()}
+          </div>
+          
+          <!-- Footer -->
+          ${statusMessage ? `
+            <div style="padding: 12px 16px; border-top: 1px solid #e5e5e5; background: #f5f5f5;">
+              <div style="font-size: 11px; color: #666666;">${statusMessage}</div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      
+      // Attach event listeners
+      const analyzeBtn = document.getElementById('analyze-btn');
+      if (analyzeBtn) analyzeBtn.onclick = handleAnalyze;
+      
+      const filterAll = document.getElementById('filter-all');
+      if (filterAll) filterAll.onclick = () => setFilterType('all');
+      
+      const filterColor = document.getElementById('filter-color');
+      if (filterColor) filterColor.onclick = () => setFilterType('color');
+      
+      const filterTypography = document.getElementById('filter-typography');
+      if (filterTypography) filterTypography.onclick = () => setFilterType('typography');
+      
+      // Attach element-specific listeners
+      filteredElements.forEach((element, idx) => {
+        const autoBtn = document.getElementById(`auto-${idx}`);
+        if (autoBtn && element.suggestions.length > 0) {
+          autoBtn.onclick = () => handleConnect(element, element.suggestions[0].styleId);
+        }
+        
+        // Create New button
+        const createBtn = document.getElementById(`create-${idx}`);
+        if (createBtn) {
+          createBtn.onclick = () => handleCreateStyle(element);
+        }
+        
+        // Custom dropdown trigger
+        const trigger = document.getElementById(`dropdown-trigger-${idx}`);
+        if (trigger) {
+          trigger.onclick = (e) => {
+            e.stopPropagation();
+            toggleDropdown(idx);
+          };
+        }
+        
+        // Custom dropdown options
+        const options = document.querySelectorAll(`[data-element-idx="${idx}"]`);
+        options.forEach(option => {
+          option.onclick = (e) => {
+            e.stopPropagation();
+            const styleId = option.getAttribute('data-style-id');
+            if (styleId) {
+              handleConnect(element, styleId);
+              // Close dropdown
+              const menu = document.getElementById(`dropdown-menu-${idx}`);
+              if (menu) menu.classList.remove('open');
+            }
+          };
+        });
+      });
+      
+      console.log('Render complete');
+    }
+    
+    function renderTable(filteredElements) {
+      let html = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;"><thead style="position: sticky; top: 0; background: #f5f5f5;"><tr>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Element</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Type</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Current Value</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Best Match</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Select Style</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Auto-Connect</th>';
+      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Create New</th>';
+      html += '</tr></thead><tbody>';
+      
+      filteredElements.forEach((element, idx) => {
+        const relevantStyles = availableStyles.filter(style => {
+          if (element.type === 'typography') return style.type === 'typography';
+          return style.type === 'color';
+        });
+        
+        const bestMatch = element.suggestions.length > 0 ? element.suggestions[0] : null;
+        
+        html += '<tr style="border-bottom: 1px solid #e5e5e5;">';
+        html += `<td style="padding: 12px;"><div style="font-weight: 500; margin-bottom: 4px;">${element.name}</div><div style="font-size: 10px; color: #999;">${element.layerPath}</div></td>`;
+        
+        const typeColors = { fill: ['#e3f2fd', '#1976d2'], stroke: ['#fff3e0', '#f57c00'], typography: ['#f3e5f5', '#7b1fa2'] };
+        const [bg, color] = typeColors[element.type] || ['#f5f5f5', '#666'];
+        html += `<td style="padding: 12px;"><span style="padding: 4px 8px; border-radius: 4px; background: ${bg}; color: ${color}; font-size: 10px; font-weight: 500; text-transform: uppercase;">${element.type === 'fill' ? 'Fill' : element.type === 'stroke' ? 'Stroke' : 'Text'}</span></td>`;
+        
+        html += '<td style="padding: 12px;">';
+        if (element.type === 'fill' || element.type === 'stroke') {
+          const c = formatColor(element.currentValue);
+          html += `<div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; background: ${c};"></div><span style="font-size: 10px; color: #666; font-family: monospace;">${c}</span></div>`;
+        } else {
+          html += `<div style="font-size: 10px; color: #666;">${formatTypography(element.currentValue)}</div>`;
+        }
+        html += '</td>';
+        
+        html += '<td style="padding: 12px;">';
+        if (bestMatch) {
+          html += `<div style="font-weight: 500; margin-bottom: 4px;">${bestMatch.styleName}</div>`;
+          const matchBg = bestMatch.matchType === 'exact' ? '#e8f5e9' : '#fff9e6';
+          const matchColor = bestMatch.matchType === 'exact' ? '#2e7d32' : '#f57f17';
+          html += `<span style="padding: 4px 8px; border-radius: 4px; background: ${matchBg}; color: ${matchColor}; font-size: 10px; font-weight: 500;">${bestMatch.matchType === 'exact' ? '✓ 100%' : `${bestMatch.confidence}%`}</span>`;
+        } else {
+          html += '<span style="color: #999; font-style: italic; font-size: 10px;">No match</span>';
+        }
+        html += '</td>';
+        
+        // Custom dropdown with color/typography info
+        html += `<td style="padding: 12px;">`;
+        html += `<div class="custom-dropdown">`;
+        html += `<div class="dropdown-trigger" id="dropdown-trigger-${idx}">`;
+        html += `<span style="color: #999;">Choose manually...</span>`;
+        html += `<span style="color: #666;">▼</span>`;
+        html += `</div>`;
+        html += `<div class="dropdown-menu" id="dropdown-menu-${idx}">`;
+        
+        relevantStyles.forEach(style => {
+          html += `<div class="dropdown-option" data-style-id="${style.id}" data-element-idx="${idx}">`;
+          
+          // Add color preview for color styles
+          if (style.type === 'color' && style.color) {
+            const colorStr = `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${style.color.a})`;
+            html += `<div class="color-preview" style="background: ${colorStr};"></div>`;
+          }
+          
+          html += `<div class="style-info">`;
+          html += `<div class="style-name">${style.name}</div>`;
+          
+          // Add font size for typography styles
+          if (style.type === 'typography' && style.typography) {
+            html += `<div class="style-meta">${style.typography.fontSize}px</div>`;
+          }
+          
+          html += `</div>`;
+          html += `</div>`;
+        });
+        
+        html += `</div>`;
+        html += `</div>`;
+        html += `</td>`;
+        
+        html += '<td style="padding: 12px; text-align: center;">';
+        if (bestMatch) {
+          html += `<button id="auto-${idx}" style="padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 4px; font-size: 10px; font-weight: 500; cursor: pointer;">🔗 Auto</button>`;
+        } else {
+          html += '<span style="color: #999;">-</span>';
+        }
+        html += '</td>';
+        
+        html += '<td style="padding: 12px; text-align: center;">';
+        html += `<button id="create-${idx}" style="padding: 6px 12px; background: #7c3aed; color: white; border: none; border-radius: 4px; font-size: 10px; font-weight: 500; cursor: pointer;">✨ Create</button>`;
+        html += '</td>';
+        
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      return html;
+    }
+    
+    function renderEmpty() {
+      if (elements.length === 0 && totalNodes === 0) {
+        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; min-height: 400px;"><div style="font-size: 48px; margin-bottom: 16px;">🎨</div><h2 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Design System Checker</h2><p style="font-size: 12px; color: #666; max-width: 300px;">Select a frame or element and click "Analyze Selection" to check for unconnected styles.</p></div>';
+      } else {
+        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; min-height: 400px;"><div style="font-size: 48px; margin-bottom: 16px;">✓</div><h2 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">All Clear!</h2><p style="font-size: 12px; color: #666; max-width: 300px;">All elements are properly connected to styles.</p></div>';
+      }
+    }
+    
+    // Modal event listeners
+    document.getElementById('modal-create').onclick = confirmCreateStyle;
+    document.getElementById('modal-cancel').onclick = closeCreateModal;
+    document.getElementById('create-modal').onclick = (e) => {
+      if (e.target.id === 'create-modal') closeCreateModal();
+    };
+    document.getElementById('style-name-input').onkeypress = (e) => {
+      if (e.key === 'Enter') confirmCreateStyle();
+    };
+    
+    // Initial render
+    console.log('Starting initial render...');
+    render();
+    console.log('=== UI Ready ===');
+  </script>
+</body>
+</html>
+
