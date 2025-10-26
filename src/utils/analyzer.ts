@@ -7,8 +7,15 @@ import {
   ColorVariableInfo,
 } from '../types';
 import { findMatchingStyles } from './matcher';
+import { getFontWeight, getLineHeightValue, getLetterSpacingValue } from './typography';
 
-// Helper to convert Figma RGB to our ColorValue format
+/**
+ * Converts Figma RGB/RGBA color to our ColorValue format.
+ * Figma uses 0-1 range, we convert to 0-255.
+ *
+ * @param color - Figma RGB or RGBA color object
+ * @returns ColorValue with r, g, b in 0-255 range and alpha 0-1
+ */
 function figmaColorToValue(color: RGB | RGBA): ColorValue {
   return {
     r: Math.round(color.r * 255),
@@ -16,26 +23,6 @@ function figmaColorToValue(color: RGB | RGBA): ColorValue {
     b: Math.round(color.b * 255),
     a: 'a' in color ? color.a : 1,
   };
-}
-
-// Helper to get line height value
-function getLineHeightValue(lineHeight: LineHeight): number | { value: number; unit: string } {
-  if (lineHeight.unit === 'PIXELS') {
-    return lineHeight.value;
-  } else if (lineHeight.unit === 'PERCENT') {
-    return { value: lineHeight.value, unit: 'PERCENT' };
-  } else {
-    return { value: 0, unit: 'AUTO' };
-  }
-}
-
-// Helper to get letter spacing value
-function getLetterSpacingValue(letterSpacing: LetterSpacing): number | { value: number; unit: string } {
-  if (letterSpacing.unit === 'PIXELS') {
-    return letterSpacing.value;
-  } else {
-    return { value: letterSpacing.value, unit: 'PERCENT' };
-  }
 }
 
 // Collect all paint styles from the document
@@ -70,12 +57,7 @@ export async function collectAllTextStyles(): Promise<TextStyleInfo[]> {
       typography: {
         fontFamily: style.fontName.family,
         fontSize: style.fontSize as number,
-        fontWeight: style.fontName.style === 'Regular' ? 400 : 
-                    style.fontName.style === 'Bold' ? 700 :
-                    style.fontName.style === 'Light' ? 300 :
-                    style.fontName.style === 'Medium' ? 500 :
-                    style.fontName.style === 'SemiBold' ? 600 :
-                    style.fontName.style === 'Black' ? 900 : 400,
+        fontWeight: getFontWeight(style.fontName.style),
         lineHeight: getLineHeightValue(style.lineHeight),
         letterSpacing: getLetterSpacingValue(style.letterSpacing),
       },
@@ -254,12 +236,7 @@ export function scanTypographyElements(
         const typography: TypographyValue = {
           fontFamily: fontName.family,
           fontSize: fontSize as number,
-          fontWeight: fontName.style === 'Regular' ? 400 : 
-                      fontName.style === 'Bold' ? 700 :
-                      fontName.style === 'Light' ? 300 :
-                      fontName.style === 'Medium' ? 500 :
-                      fontName.style === 'SemiBold' ? 600 :
-                      fontName.style === 'Black' ? 900 : 400,
+          fontWeight: getFontWeight(fontName.style),
           lineHeight: getLineHeightValue(lineHeight as LineHeight),
           letterSpacing: getLetterSpacingValue(letterSpacing as LetterSpacing),
         };

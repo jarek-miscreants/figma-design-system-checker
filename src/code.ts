@@ -2,10 +2,36 @@ import { MessageToPlugin, MessageToUI, AvailableStyle } from './types';
 import { analyzeSelection, collectAllPaintStyles, collectAllTextStyles, collectAllColorVariables } from './utils/analyzer';
 
 // Show the plugin UI with larger window
-figma.showUI(__html__, { 
-  width: 1000, 
+figma.showUI(__html__, {
+  width: 1000,
   height: 850
 });
+
+// Debounce timer for re-analysis to prevent race conditions
+let analysisTimeout: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Schedules a re-analysis with debouncing to prevent overlapping analyses.
+ * Cancels any pending analysis before scheduling a new one.
+ */
+function scheduleReanalysis() {
+  if (analysisTimeout) {
+    clearTimeout(analysisTimeout);
+  }
+  analysisTimeout = setTimeout(() => {
+    analysisTimeout = null;
+    handleAnalyze();
+  }, 100);
+}
+
+/**
+ * Type guard to check if a node supports variable binding.
+ */
+function supportsVariableBinding(node: SceneNode): node is SceneNode & {
+  setBoundVariable: (field: 'fills' | 'strokes', variable: Variable, index?: number) => void;
+} {
+  return 'setBoundVariable' in node && typeof (node as any).setBoundVariable === 'function';
+}
 
 // Handle messages from the UI
 figma.ui.onmessage = async (msg: MessageToPlugin) => {
@@ -18,7 +44,10 @@ figma.ui.onmessage = async (msg: MessageToPlugin) => {
   }
 };
 
-// Handle analyze request
+/**
+ * Handles analysis request from UI.
+ * Scans the current selection for unconnected design elements.
+ */
 async function handleAnalyze() {
   try {
     const selection = figma.currentPage.selection;
@@ -59,7 +88,15 @@ async function handleAnalyze() {
   }
 }
 
-// Handle connect element request
+/**
+ * Handles connecting an element to a style or variable.
+ * Validates input parameters and applies the style/variable to the element.
+ *
+ * @param nodeId - The ID of the node to connect
+ * @param styleId - The ID of the style or variable to apply
+ * @param elementType - Whether to apply to fill, stroke, or typography
+ * @param paintIndex - Optional index for fills/strokes with multiple paints
+ */
 async function handleConnect(
   nodeId: string,
   styleId: string,
@@ -87,6 +124,19 @@ async function handleConnect(
     } else if (elementType === 'fill') {
       // Apply fill style or variable
       if ('fills' in node && Array.isArray(node.fills)) {
+        const fills = node.fills as Paint[];
+        const targetIndex = paintIndex !== undefined ? paintIndex : 0;
+
+        // Validate paint index
+        if (targetIndex < 0 || targetIndex >= fills.length) {
+          const message: MessageToUI = {
+            type: 'error',
+            message: `Invalid paint index: ${targetIndex}. Element has ${fills.length} fill(s).`,
+          };
+          figma.ui.postMessage(message);
+          return;
+        }
+
         // Try as paint style first
         const style = await figma.getStyleByIdAsync(styleId);
         if (style && style.type === 'PAINT') {
@@ -96,12 +146,15 @@ async function handleConnect(
           try {
             const variable = await figma.variables.getVariableByIdAsync(styleId);
             if (variable && variable.resolvedType === 'COLOR') {
-              const fills = node.fills as Paint[];
-              const targetIndex = paintIndex !== undefined ? paintIndex : 0;
-              
               // Bind the variable to the fill
               if (fills[targetIndex] && fills[targetIndex].type === 'SOLID') {
-                (node as any).setBoundVariable('fills', variable, targetIndex);
+                if (supportsVariableBinding(node)) {
+                  node.setBoundVariable('fills', variable, targetIndex);
+                } else {
+                  throw new Error('Node does not support variable binding');
+                }
+              } else {
+                throw new Error('Target paint must be a solid fill');
               }
             } else {
               throw new Error('Variable not found or not a color variable');
@@ -119,6 +172,19 @@ async function handleConnect(
     } else if (elementType === 'stroke') {
       // Apply stroke style or variable
       if ('strokes' in node && Array.isArray(node.strokes)) {
+        const strokes = node.strokes as Paint[];
+        const targetIndex = paintIndex !== undefined ? paintIndex : 0;
+
+        // Validate paint index
+        if (targetIndex < 0 || targetIndex >= strokes.length) {
+          const message: MessageToUI = {
+            type: 'error',
+            message: `Invalid paint index: ${targetIndex}. Element has ${strokes.length} stroke(s).`,
+          };
+          figma.ui.postMessage(message);
+          return;
+        }
+
         // Try as paint style first
         const style = await figma.getStyleByIdAsync(styleId);
         if (style && style.type === 'PAINT') {
@@ -128,12 +194,15 @@ async function handleConnect(
           try {
             const variable = await figma.variables.getVariableByIdAsync(styleId);
             if (variable && variable.resolvedType === 'COLOR') {
-              const strokes = node.strokes as Paint[];
-              const targetIndex = paintIndex !== undefined ? paintIndex : 0;
-              
               // Bind the variable to the stroke
               if (strokes[targetIndex] && strokes[targetIndex].type === 'SOLID') {
-                (node as any).setBoundVariable('strokes', variable, targetIndex);
+                if (supportsVariableBinding(node)) {
+                  node.setBoundVariable('strokes', variable, targetIndex);
+                } else {
+                  throw new Error('Node does not support variable binding');
+                }
+              } else {
+                throw new Error('Target paint must be a solid stroke');
               }
             } else {
               throw new Error('Variable not found or not a color variable');
@@ -156,8 +225,8 @@ async function handleConnect(
     };
     figma.ui.postMessage(message);
 
-    // Re-analyze to update the list
-    setTimeout(() => handleAnalyze(), 100);
+    // Re-analyze to update the list (with debouncing)
+    scheduleReanalysis();
   } catch (error) {
     const message: MessageToUI = {
       type: 'error',
@@ -167,7 +236,15 @@ async function handleConnect(
   }
 }
 
-// Handle create style request
+/**
+ * Handles creating a new style from an element's properties.
+ * Creates a paint style or text style and applies it to the source element.
+ *
+ * @param nodeId - The ID of the node to create a style from
+ * @param elementType - Whether to create a fill, stroke, or typography style
+ * @param styleName - The name for the new style
+ * @param paintIndex - Optional index for fills/strokes with multiple paints
+ */
 async function handleCreateStyle(
   nodeId: string,
   elementType: 'fill' | 'stroke' | 'typography',
@@ -175,6 +252,16 @@ async function handleCreateStyle(
   paintIndex?: number
 ) {
   try {
+    // Validate style name
+    if (!styleName || styleName.trim() === '') {
+      const message: MessageToUI = {
+        type: 'error',
+        message: 'Style name cannot be empty',
+      };
+      figma.ui.postMessage(message);
+      return;
+    }
+
     const node = await figma.getNodeByIdAsync(nodeId);
 
     if (!node) {
@@ -217,14 +304,31 @@ async function handleCreateStyle(
       if ('fills' in node && Array.isArray(node.fills)) {
         const fills = node.fills as Paint[];
         const targetIndex = paintIndex !== undefined ? paintIndex : 0;
-        
+
+        // Validate paint index
+        if (targetIndex < 0 || targetIndex >= fills.length) {
+          const message: MessageToUI = {
+            type: 'error',
+            message: `Invalid paint index: ${targetIndex}. Element has ${fills.length} fill(s).`,
+          };
+          figma.ui.postMessage(message);
+          return;
+        }
+
         if (fills[targetIndex] && fills[targetIndex].type === 'SOLID') {
           const newStyle = figma.createPaintStyle();
           newStyle.name = styleName;
           newStyle.paints = [fills[targetIndex]];
-          
+
           // Apply the new style to the node
           await (node as MinimalFillsMixin).setFillStyleIdAsync(newStyle.id);
+        } else {
+          const message: MessageToUI = {
+            type: 'error',
+            message: 'Can only create styles from solid fills',
+          };
+          figma.ui.postMessage(message);
+          return;
         }
       }
     } else if (elementType === 'stroke') {
@@ -232,14 +336,31 @@ async function handleCreateStyle(
       if ('strokes' in node && Array.isArray(node.strokes)) {
         const strokes = node.strokes as Paint[];
         const targetIndex = paintIndex !== undefined ? paintIndex : 0;
-        
+
+        // Validate paint index
+        if (targetIndex < 0 || targetIndex >= strokes.length) {
+          const message: MessageToUI = {
+            type: 'error',
+            message: `Invalid paint index: ${targetIndex}. Element has ${strokes.length} stroke(s).`,
+          };
+          figma.ui.postMessage(message);
+          return;
+        }
+
         if (strokes[targetIndex] && strokes[targetIndex].type === 'SOLID') {
           const newStyle = figma.createPaintStyle();
           newStyle.name = styleName;
           newStyle.paints = [strokes[targetIndex]];
-          
+
           // Apply the new style to the node
           await (node as MinimalStrokesMixin).setStrokeStyleIdAsync(newStyle.id);
+        } else {
+          const message: MessageToUI = {
+            type: 'error',
+            message: 'Can only create styles from solid strokes',
+          };
+          figma.ui.postMessage(message);
+          return;
         }
       }
     }
@@ -251,8 +372,8 @@ async function handleCreateStyle(
     };
     figma.ui.postMessage(message);
 
-    // Re-analyze to update the list
-    setTimeout(() => handleAnalyze(), 100);
+    // Re-analyze to update the list (with debouncing)
+    scheduleReanalysis();
   } catch (error) {
     const message: MessageToUI = {
       type: 'error',
