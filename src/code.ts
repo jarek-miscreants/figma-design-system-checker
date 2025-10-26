@@ -94,7 +94,7 @@ async function handleConnect(
         } else {
           // Try as variable
           try {
-            const variable = figma.variables.getVariableById(styleId);
+            const variable = await figma.variables.getVariableByIdAsync(styleId);
             if (variable && variable.resolvedType === 'COLOR') {
               const fills = node.fills as Paint[];
               const targetIndex = paintIndex !== undefined ? paintIndex : 0;
@@ -126,7 +126,7 @@ async function handleConnect(
         } else {
           // Try as variable
           try {
-            const variable = figma.variables.getVariableById(styleId);
+            const variable = await figma.variables.getVariableByIdAsync(styleId);
             if (variable && variable.resolvedType === 'COLOR') {
               const strokes = node.strokes as Paint[];
               const targetIndex = paintIndex !== undefined ? paintIndex : 0;

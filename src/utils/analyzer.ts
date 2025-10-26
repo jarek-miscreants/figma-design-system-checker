@@ -91,7 +91,8 @@ export async function collectAllColorVariables(): Promise<ColorVariableInfo[]> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
 
   for (const collection of collections) {
-    const variables = collection.variableIds.map(id => figma.variables.getVariableById(id)).filter(v => v !== null) as Variable[];
+    const variablePromises = collection.variableIds.map(id => figma.variables.getVariableByIdAsync(id));
+    const variables = (await Promise.all(variablePromises)).filter(v => v !== null) as Variable[];
     
     for (const variable of variables) {
       if (variable.resolvedType === 'COLOR') {

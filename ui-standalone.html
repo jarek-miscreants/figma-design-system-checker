@@ -6,11 +6,13 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 11px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      font-size: 13px;
       background: #ffffff;
-      color: #000000;
+      color: #09090b;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     html, body { height: 100%; width: 100%; }
     
@@ -22,20 +24,29 @@
     
     .dropdown-trigger {
       width: 100%;
-      padding: 6px 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 10px;
-      background: white;
+      padding: 8px 12px;
+      border: 1px solid #e4e4e7;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #ffffff;
       cursor: pointer;
       text-align: left;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      transition: all 0.15s ease;
+      color: #71717a;
     }
     
     .dropdown-trigger:hover {
-      border-color: #18a0fb;
+      background: #fafafa;
+      border-color: #d4d4d8;
+    }
+    
+    .dropdown-trigger:focus {
+      outline: none;
+      border-color: #09090b;
+      box-shadow: 0 0 0 1px #09090b;
     }
     
     .dropdown-menu {
@@ -43,12 +54,12 @@
       top: 100%;
       left: 0;
       right: 0;
-      max-height: 200px;
+      max-height: 250px;
       overflow-y: auto;
-      background: white;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background: #ffffff;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       z-index: 1000;
       margin-top: 4px;
       display: none;
@@ -59,23 +70,29 @@
     }
     
     .dropdown-option {
-      padding: 8px 10px;
+      padding: 10px 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 10px;
+      gap: 10px;
+      font-size: 13px;
+      transition: background 0.1s ease;
+      border-bottom: 1px solid #f4f4f5;
+    }
+    
+    .dropdown-option:last-child {
+      border-bottom: none;
     }
     
     .dropdown-option:hover {
-      background: #f5f5f5;
+      background: #fafafa;
     }
     
     .color-preview {
-      width: 16px;
-      height: 16px;
-      border-radius: 3px;
-      border: 1px solid #ddd;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid #e4e4e7;
       flex-shrink: 0;
     }
     
@@ -83,16 +100,22 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
+      flex: 1;
+      min-width: 0;
     }
     
     .style-name {
       font-weight: 500;
-      color: #000;
+      color: #09090b;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .style-meta {
-      font-size: 9px;
-      color: #999;
+      font-size: 12px;
+      color: #71717a;
     }
     
     /* Modal Styles */
@@ -102,11 +125,18 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 2000;
+      animation: fadeIn 0.15s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     
     .modal-overlay.open {
@@ -114,33 +144,60 @@
     }
     
     .modal-content {
-      background: white;
+      background: #ffffff;
+      border: 1px solid #e4e4e7;
       border-radius: 8px;
       padding: 24px;
-      width: 400px;
+      width: 440px;
       max-width: 90%;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      animation: slideUp 0.2s ease;
+    }
+    
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .modal-title {
-      font-size: 14px;
+      font-size: 18px;
       font-weight: 600;
-      margin-bottom: 16px;
-      color: #000;
+      margin-bottom: 4px;
+      color: #09090b;
+      letter-spacing: -0.01em;
+    }
+    
+    .modal-description {
+      font-size: 14px;
+      color: #71717a;
+      margin-bottom: 20px;
     }
     
     .modal-input {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 11px;
-      margin-bottom: 16px;
+      padding: 10px 12px;
+      border: 1px solid #e4e4e7;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    
+    .modal-input:hover {
+      border-color: #d4d4d8;
     }
     
     .modal-input:focus {
       outline: none;
-      border-color: #18a0fb;
+      border-color: #09090b;
+      box-shadow: 0 0 0 2px #f4f4f5;
     }
     
     .modal-buttons {
@@ -150,30 +207,44 @@
     }
     
     .modal-button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      font-size: 11px;
+      padding: 10px 16px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 14px;
       font-weight: 500;
       cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
     }
     
     .modal-button-primary {
-      background: #7c3aed;
-      color: white;
+      background: #09090b;
+      color: #ffffff;
+      border-color: #09090b;
     }
     
     .modal-button-primary:hover {
-      background: #6d28d9;
+      background: #18181b;
+      border-color: #18181b;
+    }
+    
+    .modal-button-primary:active {
+      background: #000000;
     }
     
     .modal-button-secondary {
-      background: #e5e5e5;
-      color: #000;
+      background: #ffffff;
+      color: #09090b;
+      border-color: #e4e4e7;
     }
     
     .modal-button-secondary:hover {
-      background: #d4d4d4;
+      background: #fafafa;
+      border-color: #d4d4d8;
+    }
+    
+    .modal-button-secondary:active {
+      background: #f4f4f5;
     }
   </style>
 </head>
@@ -184,6 +255,7 @@
   <div id="create-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-title">Create New Style</div>
+      <div class="modal-description">Create a new style from this element's properties</div>
       <input type="text" id="style-name-input" class="modal-input" placeholder="Enter style name...">
       <div class="modal-buttons">
         <button id="modal-cancel" class="modal-button modal-button-secondary">Cancel</button>
@@ -371,12 +443,15 @@
       app.innerHTML = `
         <div style="display: flex; flex-direction: column; height: 100vh; background: #ffffff;">
           <!-- Header -->
-          <div style="padding: 16px; border-bottom: 1px solid #e5e5e5; background: #f0f0f0;">
-            <h1 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 600; color: #000000;">Design System Checker</h1>
+          <div style="padding: 20px; border-bottom: 1px solid #e4e4e7;">
+            <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #09090b; letter-spacing: -0.02em;">Design System Checker</h1>
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: #71717a;">Identify and connect unlinked design elements to your system</p>
             <button 
               id="analyze-btn"
-              style="width: 100%; padding: 8px 16px; background: ${isAnalyzing ? '#b3b3b3' : '#18a0fb'}; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: ${isAnalyzing ? 'not-allowed' : 'pointer'};"
+              style="width: 100%; padding: 10px 16px; background: ${isAnalyzing ? '#a1a1aa' : '#09090b'}; color: white; border: 1px solid ${isAnalyzing ? '#a1a1aa' : '#09090b'}; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: ${isAnalyzing ? 'not-allowed' : 'pointer'}; transition: all 0.15s ease; font-family: inherit;"
               ${isAnalyzing ? 'disabled' : ''}
+              onmouseover="if(!this.disabled) this.style.background='#18181b'; if(!this.disabled) this.style.borderColor='#18181b';"
+              onmouseout="if(!this.disabled) this.style.background='#09090b'; if(!this.disabled) this.style.borderColor='#09090b';"
             >
               ${isAnalyzing ? 'Analyzing...' : 'Analyze Selection'}
             </button>
@@ -384,14 +459,14 @@
           
           <!-- Filters -->
           ${elements.length > 0 ? `
-            <div style="display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e5e5e5; background: #f5f5f5;">
-              <button id="filter-all" style="padding: 6px 12px; background: ${filter === 'all' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'all' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'all' ? 'white' : '#000'}; font-weight: ${filter === 'all' ? '500' : '400'};">
+            <div style="display: flex; gap: 6px; padding: 16px 20px; border-bottom: 1px solid #e4e4e7; background: #fafafa;">
+              <button id="filter-all" style="padding: 8px 14px; background: ${filter === 'all' ? '#09090b' : '#ffffff'}; border: 1px solid ${filter === 'all' ? '#09090b' : '#e4e4e7'}; border-radius: 6px; font-size: 13px; cursor: pointer; color: ${filter === 'all' ? 'white' : '#71717a'}; font-weight: 500; transition: all 0.15s ease; font-family: inherit;">
                 All (${elements.length})
               </button>
-              <button id="filter-color" style="padding: 6px 12px; background: ${filter === 'color' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'color' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'color' ? 'white' : '#000'}; font-weight: ${filter === 'color' ? '500' : '400'};">
+              <button id="filter-color" style="padding: 8px 14px; background: ${filter === 'color' ? '#09090b' : '#ffffff'}; border: 1px solid ${filter === 'color' ? '#09090b' : '#e4e4e7'}; border-radius: 6px; font-size: 13px; cursor: pointer; color: ${filter === 'color' ? 'white' : '#71717a'}; font-weight: 500; transition: all 0.15s ease; font-family: inherit;">
                 Colors (${elements.filter(e => e.type === 'fill' || e.type === 'stroke').length})
               </button>
-              <button id="filter-typography" style="padding: 6px 12px; background: ${filter === 'typography' ? '#18a0fb' : '#ffffff'}; border: 1px solid ${filter === 'typography' ? '#18a0fb' : '#d9d9d9'}; border-radius: 4px; font-size: 11px; cursor: pointer; color: ${filter === 'typography' ? 'white' : '#000'}; font-weight: ${filter === 'typography' ? '500' : '400'};">
+              <button id="filter-typography" style="padding: 8px 14px; background: ${filter === 'typography' ? '#09090b' : '#ffffff'}; border: 1px solid ${filter === 'typography' ? '#09090b' : '#e4e4e7'}; border-radius: 6px; font-size: 13px; cursor: pointer; color: ${filter === 'typography' ? 'white' : '#71717a'}; font-weight: 500; transition: all 0.15s ease; font-family: inherit;">
                 Typography (${elements.filter(e => e.type === 'typography').length})
               </button>
             </div>
@@ -404,8 +479,8 @@
           
           <!-- Footer -->
           ${statusMessage ? `
-            <div style="padding: 12px 16px; border-top: 1px solid #e5e5e5; background: #f5f5f5;">
-              <div style="font-size: 11px; color: #666666;">${statusMessage}</div>
+            <div style="padding: 16px 20px; border-top: 1px solid #e4e4e7; background: #fafafa;">
+              <div style="font-size: 13px; color: #71717a;">${statusMessage}</div>
             </div>
           ` : ''}
         </div>
@@ -466,14 +541,14 @@
     }
     
     function renderTable(filteredElements) {
-      let html = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;"><thead style="position: sticky; top: 0; background: #f5f5f5;"><tr>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Element</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Type</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Current Value</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Best Match</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Select Style</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Auto-Connect</th>';
-      html += '<th style="padding: 8px 12px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; color: #666;">Create New</th>';
+      let html = '<table style="width: 100%; border-collapse: collapse; font-size: 13px;"><thead style="position: sticky; top: 0; background: #fafafa; z-index: 10;"><tr>';
+      html += '<th style="padding: 12px 20px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Element</th>';
+      html += '<th style="padding: 12px 20px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Type</th>';
+      html += '<th style="padding: 12px 20px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Current Value</th>';
+      html += '<th style="padding: 12px 20px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Best Match</th>';
+      html += '<th style="padding: 12px 20px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Select Style</th>';
+      html += '<th style="padding: 12px 20px; text-align: center; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Auto</th>';
+      html += '<th style="padding: 12px 20px; text-align: center; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; border-bottom: 1px solid #e4e4e7;">Create</th>';
       html += '</tr></thead><tbody>';
       
       filteredElements.forEach((element, idx) => {
@@ -484,39 +559,40 @@
         
         const bestMatch = element.suggestions.length > 0 ? element.suggestions[0] : null;
         
-        html += '<tr style="border-bottom: 1px solid #e5e5e5;">';
-        html += `<td style="padding: 12px;"><div style="font-weight: 500; margin-bottom: 4px;">${element.name}</div><div style="font-size: 10px; color: #999;">${element.layerPath}</div></td>`;
+        html += '<tr style="border-bottom: 1px solid #e4e4e7; transition: background 0.1s ease;" onmouseover="this.style.background=\'#fafafa\'" onmouseout="this.style.background=\'transparent\'">';
+        html += `<td style="padding: 16px 20px;"><div style="font-weight: 500; margin-bottom: 4px; color: #09090b; font-size: 14px;">${element.name}</div><div style="font-size: 12px; color: #a1a1aa;">${element.layerPath}</div></td>`;
         
-        const typeColors = { fill: ['#e3f2fd', '#1976d2'], stroke: ['#fff3e0', '#f57c00'], typography: ['#f3e5f5', '#7b1fa2'] };
-        const [bg, color] = typeColors[element.type] || ['#f5f5f5', '#666'];
-        html += `<td style="padding: 12px;"><span style="padding: 4px 8px; border-radius: 4px; background: ${bg}; color: ${color}; font-size: 10px; font-weight: 500; text-transform: uppercase;">${element.type === 'fill' ? 'Fill' : element.type === 'stroke' ? 'Stroke' : 'Text'}</span></td>`;
+        const typeColors = { fill: ['#fafafa', '#09090b', '#e4e4e7'], stroke: ['#fafafa', '#09090b', '#e4e4e7'], typography: ['#fafafa', '#09090b', '#e4e4e7'] };
+        const [bg, color, borderColor] = typeColors[element.type] || ['#fafafa', '#71717a', '#e4e4e7'];
+        html += `<td style="padding: 16px 20px;"><span style="padding: 6px 10px; border-radius: 6px; background: ${bg}; color: ${color}; border: 1px solid ${borderColor}; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${element.type === 'fill' ? 'Fill' : element.type === 'stroke' ? 'Stroke' : 'Text'}</span></td>`;
         
-        html += '<td style="padding: 12px;">';
+        html += '<td style="padding: 16px 20px;">';
         if (element.type === 'fill' || element.type === 'stroke') {
           const c = formatColor(element.currentValue);
-          html += `<div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; background: ${c};"></div><span style="font-size: 10px; color: #666; font-family: monospace;">${c}</span></div>`;
+          html += `<div style="display: flex; align-items: center; gap: 10px;"><div style="width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e4e4e7; background: ${c}; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);"></div><span style="font-size: 12px; color: #71717a; font-family: ui-monospace, monospace;">${c}</span></div>`;
         } else {
-          html += `<div style="font-size: 10px; color: #666;">${formatTypography(element.currentValue)}</div>`;
+          html += `<div style="font-size: 13px; color: #71717a;">${formatTypography(element.currentValue)}</div>`;
         }
         html += '</td>';
         
-        html += '<td style="padding: 12px;">';
+        html += '<td style="padding: 16px 20px;">';
         if (bestMatch) {
-          html += `<div style="font-weight: 500; margin-bottom: 4px;">${bestMatch.styleName}</div>`;
-          const matchBg = bestMatch.matchType === 'exact' ? '#e8f5e9' : '#fff9e6';
-          const matchColor = bestMatch.matchType === 'exact' ? '#2e7d32' : '#f57f17';
-          html += `<span style="padding: 4px 8px; border-radius: 4px; background: ${matchBg}; color: ${matchColor}; font-size: 10px; font-weight: 500;">${bestMatch.matchType === 'exact' ? '✓ 100%' : `${bestMatch.confidence}%`}</span>`;
+          html += `<div style="font-weight: 500; margin-bottom: 6px; color: #09090b; font-size: 13px;">${bestMatch.styleName}</div>`;
+          const matchBg = bestMatch.matchType === 'exact' ? '#fafafa' : '#fafafa';
+          const matchColor = bestMatch.matchType === 'exact' ? '#09090b' : '#71717a';
+          const matchBorder = bestMatch.matchType === 'exact' ? '#09090b' : '#e4e4e7';
+          html += `<span style="padding: 4px 10px; border-radius: 4px; background: ${matchBg}; color: ${matchColor}; border: 1px solid ${matchBorder}; font-size: 12px; font-weight: 500;">${bestMatch.matchType === 'exact' ? '✓ 100%' : `${bestMatch.confidence}%`}</span>`;
         } else {
-          html += '<span style="color: #999; font-style: italic; font-size: 10px;">No match</span>';
+          html += '<span style="color: #a1a1aa; font-style: italic; font-size: 13px;">No match</span>';
         }
         html += '</td>';
         
         // Custom dropdown with color/typography info
-        html += `<td style="padding: 12px;">`;
+        html += `<td style="padding: 16px 20px;">`;
         html += `<div class="custom-dropdown">`;
         html += `<div class="dropdown-trigger" id="dropdown-trigger-${idx}">`;
-        html += `<span style="color: #999;">Choose manually...</span>`;
-        html += `<span style="color: #666;">▼</span>`;
+        html += `<span>Choose manually...</span>`;
+        html += `<span style="font-size: 10px;">▼</span>`;
         html += `</div>`;
         html += `<div class="dropdown-menu" id="dropdown-menu-${idx}">`;
         
@@ -526,7 +602,7 @@
           // Add color preview for color styles
           if (style.type === 'color' && style.color) {
             const colorStr = `rgba(${style.color.r}, ${style.color.g}, ${style.color.b}, ${style.color.a})`;
-            html += `<div class="color-preview" style="background: ${colorStr};"></div>`;
+            html += `<div class="color-preview" style="background: ${colorStr}; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);"></div>`;
           }
           
           html += `<div class="style-info">`;
@@ -545,16 +621,16 @@
         html += `</div>`;
         html += `</td>`;
         
-        html += '<td style="padding: 12px; text-align: center;">';
+        html += '<td style="padding: 16px 20px; text-align: center;">';
         if (bestMatch) {
-          html += `<button id="auto-${idx}" style="padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 4px; font-size: 10px; font-weight: 500; cursor: pointer;">🔗 Auto</button>`;
+          html += `<button id="auto-${idx}" style="padding: 8px 14px; background: #09090b; color: white; border: 1px solid #09090b; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; font-family: inherit;" onmouseover="this.style.background='#18181b'; this.style.borderColor='#18181b';" onmouseout="this.style.background='#09090b'; this.style.borderColor='#09090b';">Connect</button>`;
         } else {
-          html += '<span style="color: #999;">-</span>';
+          html += '<span style="color: #d4d4d8;">—</span>';
         }
         html += '</td>';
         
-        html += '<td style="padding: 12px; text-align: center;">';
-        html += `<button id="create-${idx}" style="padding: 6px 12px; background: #7c3aed; color: white; border: none; border-radius: 4px; font-size: 10px; font-weight: 500; cursor: pointer;">✨ Create</button>`;
+        html += '<td style="padding: 16px 20px; text-align: center;">';
+        html += `<button id="create-${idx}" style="padding: 8px 14px; background: #ffffff; color: #09090b; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; font-family: inherit;" onmouseover="this.style.background='#fafafa'; this.style.borderColor='#d4d4d8';" onmouseout="this.style.background='#ffffff'; this.style.borderColor='#e4e4e7';">Create</button>`;
         html += '</td>';
         
         html += '</tr>';
@@ -566,9 +642,9 @@
     
     function renderEmpty() {
       if (elements.length === 0 && totalNodes === 0) {
-        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; min-height: 400px;"><div style="font-size: 48px; margin-bottom: 16px;">🎨</div><h2 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Design System Checker</h2><p style="font-size: 12px; color: #666; max-width: 300px;">Select a frame or element and click "Analyze Selection" to check for unconnected styles.</p></div>';
+        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 32px; text-align: center; min-height: 500px;"><div style="width: 80px; height: 80px; margin: 0 auto 24px; border-radius: 12px; background: #fafafa; border: 1px solid #e4e4e7; display: flex; align-items: center; justify-content: center;"><svg width="52" height="52" viewBox="0 0 52 91" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_4211_3)"><path d="M41.7646 42.9833V45.7801H47.3335V40.1865H44.549V42.9833H41.7646Z" fill="#09090b"/><path d="M19.4912 54.1704V56.9672H25.0602V54.1704H19.4912Z" fill="#09090b"/><path d="M16.7064 54.1705H13.9219V51.3738H11.1375V48.577H8.35305V45.7802H5.56861V42.9834H2.78418V54.1705H5.56861V56.9673H8.35305V84.9339H11.1375V82.1384H16.7064V79.3416H11.1375V76.5449H16.7064V59.7641H19.4907V56.9673H16.7064V54.1705Z" fill="#09090b"/><path d="M19.4914 76.5449H16.707V79.3417H19.4914V76.5449Z" fill="#09090b"/><path d="M22.2757 79.3418H19.4912V82.1386H22.2757V79.3418Z" fill="#09090b"/><path d="M25.0599 82.1387H22.2754V84.9355H25.0599V82.1387Z" fill="#09090b"/><path d="M16.707 87.7309V90.5277H27.8434V84.9341H25.0603V87.7309H16.707Z" fill="#09090b"/><path d="M11.1377 84.9341V87.7309H16.7066V84.9341H11.1377Z" fill="#09090b"/><path d="M38.9803 73.7481V70.9514H33.4114V68.1546H38.9803V48.5771H41.7647V45.7803H36.1959V48.5771H30.6269V51.3738H25.0596V54.1706H30.6269V76.5449H33.4114V73.7481H38.9803Z" fill="#09090b"/><path d="M41.765 68.1543H38.9805V70.9511H41.765V68.1543Z" fill="#09090b"/><path d="M44.549 70.9512H41.7646V73.748H44.549V70.9512Z" fill="#09090b"/><path d="M47.3343 73.748H44.5498V76.5448H47.3343V73.748Z" fill="#09090b"/><path d="M47.3338 76.5449V79.3417H38.9805V82.1385H50.1183V76.5449H47.3338Z" fill="#09090b"/><path d="M33.4121 76.5449V79.3417H38.9809V76.5449H33.4121Z" fill="#09090b"/><path d="M2.78443 17.8139H5.56886V15.0171H0V42.9837H2.78443V17.8139Z" fill="#09090b"/><path d="M44.549 37.3896H41.7646V40.1864H44.549V37.3896Z" fill="#09090b"/><path d="M41.765 34.5933H38.9805V37.39H41.765V34.5933Z" fill="#09090b"/><path d="M38.9808 31.7964H36.1963V34.5932H38.9808V31.7964Z" fill="#09090b"/><path d="M36.1964 28.9995H33.4121V31.7963H36.1964V28.9995Z" fill="#09090b"/><path d="M33.4114 34.5933H30.627V37.39H33.4114V34.5933Z" fill="#09090b"/><path d="M36.1964 37.3896H33.4121V40.1864H36.1964V37.3896Z" fill="#09090b"/><path d="M33.4114 40.1865H30.627V42.9833H33.4114V40.1865Z" fill="#09090b"/><path d="M30.6271 37.3896H27.8428V40.1864H30.6271V37.3896Z" fill="#09090b"/><path d="M27.8439 40.1865H25.0596V42.9833H27.8439V40.1865Z" fill="#09090b"/><path d="M25.0599 42.9834H22.2754V45.7802H25.0599V42.9834Z" fill="#09090b"/><path d="M22.2757 45.7803H19.4912V48.5771H22.2757V45.7803Z" fill="#09090b"/><path d="M16.7063 45.7803H13.9219V48.5771H16.7063V45.7803Z" fill="#09090b"/><path d="M19.4914 42.9834H16.707V45.7802H19.4914V42.9834Z" fill="#09090b"/><path d="M22.2757 40.1865H19.4912V42.9833H22.2757V40.1865Z" fill="#09090b"/><path d="M25.0599 37.3896H22.2754V40.1864H25.0599V37.3896Z" fill="#09090b"/><path d="M27.8439 34.5933H25.0596V37.39H27.8439V34.5933Z" fill="#09090b"/><path d="M16.7063 40.1865H13.9219V42.9833H16.7063V40.1865Z" fill="#09090b"/><path d="M13.9221 42.9834H11.1377V45.7802H13.9221V42.9834Z" fill="#09090b"/><path d="M30.6271 28.9993H33.4116V1.03271H27.8428V3.82951H30.6271V28.9993Z" fill="#09090b"/><path d="M27.8429 6.62638V3.82959H22.2754V6.62638H27.8429Z" fill="#09090b"/><path d="M22.2759 9.42327V6.62646H16.707V9.42327H22.2759Z" fill="#09090b"/><path d="M16.7066 12.2201V9.42334H11.1377V12.2201H16.7066Z" fill="#09090b"/><path d="M11.1382 15.017V12.2202H5.56934V15.017H11.1382Z" fill="#09090b"/><path d="M16.7071 12.2201V15.0169H11.1382V17.8137H5.56934V40.1867H11.1382V37.3899H16.7071V34.5931H22.2759V31.7963H27.8435V9.42334H22.2759V12.2201H16.7071Z" fill="#09090b"/></g><defs><clipPath id="clip0_4211_3"><rect width="51.25" height="90.7858" fill="white"/></clipPath></defs></svg></div><h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #09090b; letter-spacing: -0.02em;">Design System Checker</h2><p style="font-size: 14px; color: #71717a; max-width: 380px; line-height: 1.6;">Select a frame or element and click "Analyze Selection" to check for unconnected styles.</p></div>';
       } else {
-        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; min-height: 400px;"><div style="font-size: 48px; margin-bottom: 16px;">✓</div><h2 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">All Clear!</h2><p style="font-size: 12px; color: #666; max-width: 300px;">All elements are properly connected to styles.</p></div>';
+        return '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 32px; text-align: center; min-height: 500px;"><div style="width: 64px; height: 64px; margin: 0 auto 24px; border-radius: 12px; background: #fafafa; border: 1px solid #e4e4e7; display: flex; align-items: center; justify-content: center; font-size: 32px;">✓</div><h2 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #09090b; letter-spacing: -0.02em;">All Clear!</h2><p style="font-size: 14px; color: #71717a; max-width: 380px; line-height: 1.6;">All elements are properly connected to styles.</p></div>';
       }
     }
     
